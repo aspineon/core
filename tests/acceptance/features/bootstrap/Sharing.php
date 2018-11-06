@@ -84,21 +84,47 @@ trait Sharing {
 	 * @return void
 	 */
 	public function userCreatesAShareWithSettings($user, $body) {
-		$fullUrl = $this->getBaseUrl()
-			. "/ocs/v{$this->ocsApiVersion}.php/apps/files_sharing/api/v{$this->sharingApiVersion}/shares";
 
 		if ($body instanceof TableNode) {
 			$fd = $body->getRowsHash();
-			if (\array_key_exists('expireDate', $fd)) {
-				$dateModification = $fd['expireDate'];
-				$fd['expireDate'] = \date('Y-m-d', \strtotime($dateModification));
+			$fd['expireDate'] = \array_key_exists('expireDate', $fd) ? $fd['expireDate'] : null;
+			$fd['linkName'] = \array_key_exists('linkName', $fd) ? $fd['linkName'] : null;
+			$fd['shareWith'] = \array_key_exists('shareWith', $fd) ? $fd['shareWith'] : null;
+			$fd['publicUpload'] = \array_key_exists('publicUpload', $fd) ? $fd['publicUpload'] === 'true' : null;
+			$fd['sharePassword'] = \array_key_exists('sharePassword', $fd) ? $fd['sharePassword'] : null;
+
+			if(\array_key_exists('permissions', $fd)) {
+				if (is_numeric($fd['permissions'])) {
+					$fd['permissions'] = (int)$fd['permissions'];
+				} else {
+					$fd['permissions'] = array_map('trim', explode(',', $fd['permissions']));
+				}
+			} else {
+				$fd['permissions'] = null;
 			}
-			if (\array_key_exists('password', $fd)) {
-				$fd['password'] = $this->getActualPassword($fd['password']);
+			if(\array_key_exists('shareType', $fd)) {
+				if (is_numeric($fd['shareType'])) {
+					$fd['shareType'] = (int)$fd['shareType'];
+				}
+			} else {
+				$fd['shareType'] = null;
 			}
 		}
-		$this->response = HttpRequestHelper::post(
-			$fullUrl, $user, $this->getPasswordForUser($user), null, $fd
+
+		$this->response = SharingHelper::createShare(
+			$this->getBaseUrl(),
+			$user,
+			$this->getPasswordForUser($user),
+			$fd['path'],
+			$fd['shareType'],
+			$fd['shareWith'],
+			$fd['publicUpload'],
+			$fd['sharePassword'],
+			$fd['permissions'],
+			$fd['linkName'],
+			$fd['expireDate'],
+			$this->ocsApiVersion,
+			$this->sharingApiVersion
 		);
 		$this->lastShareData = $this->getResponseXml();
 	}
