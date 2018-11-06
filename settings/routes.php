@@ -37,6 +37,7 @@ $application = new Application();
 $application->registerRoutes($this, [
 	'resources' => [
 		'auth_settings' => ['url' => '/settings/personal/authtokens'],
+		'groups_select' => ['url' => '/settings/users/groups'],
 	],
 	'routes' => [
 		['name' => 'MailSettings#setMailSettings', 'url' => '/settings/admin/mailsettings', 'verb' => 'POST'],
